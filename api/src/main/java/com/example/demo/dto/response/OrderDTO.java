@@ -1,21 +1,20 @@
 package com.example.demo.dto.response;
 
-import com.example.demo.dto.enums.OrderType;
-import com.example.demo.dto.request.AddressDTO;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
+import com.example.demo.dto.enums.OrderType;
+import com.example.demo.dto.request.AddressDTO;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @Data
 @NoArgsConstructor
 public class OrderDTO {
+
     private Long id;
     private BigDecimal totalPrice;
     private LocalDate deliveryDate;
@@ -24,11 +23,14 @@ public class OrderDTO {
     private AddressDTO deliveryAddress;
     private List<OrderLineDTO> lines;
     private OrderType orderType;
+    private OrderStatus status;
     private UserDto assignenedTo;
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         OrderDTO orderDTO = (OrderDTO) o;
         return Objects.equals(id, orderDTO.id);
     }
