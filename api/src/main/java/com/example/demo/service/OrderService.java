@@ -360,7 +360,9 @@ public class OrderService {
         for (OrderAssignmentEntity assignment : assignments) {
             OrderDTO order = modelMapper.map(assignment.getOrder(), OrderDTO.class);
             order.setOrderType(assignment.getOrderType());
-            orders.add(order);
+            if (!(order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.CANCELED)) {
+                orders.add(order);
+            }
         }
         return orders.stream().sorted(OrderDTO::compare).toList();
     }
@@ -378,7 +380,7 @@ public class OrderService {
         if (order.isEmpty()) {
             return new MessageResponseDTO(400, "Order not found");
         }
-        if ((order.get().getStatus() == OrderStatus.COMPLETED) || (order.get().getStatus() == OrderStatus.CANCELLED)) {
+        if ((order.get().getStatus() == OrderStatus.COMPLETED) || (order.get().getStatus() == OrderStatus.CANCELED)) {
             return new MessageResponseDTO(400, "Order is not pending");
         }
         order.get().setStatus(orderCompleteDTO.getOrderStatus());
