@@ -29,6 +29,7 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class OrderService {
+
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final AddressService addressService;
@@ -38,7 +39,6 @@ public class OrderService {
     private final OrderLineRepository orderLineRepository;
     private final AssignmentRepository assignmentRepository;
     private final StripeService stripeService;
-
 
     @Transactional
     public CreateOrderResultDTO createOrder(OrderCreateDTO orderCreateDTO, String email) {
@@ -55,15 +55,27 @@ public class OrderService {
         BigDecimal pricePerDay = BigDecimal.ZERO;
         int totalDays = (int) (orderCreateDTO.getReturnDate().toEpochDay() - orderCreateDTO.getDeliveryDate().toEpochDay());
 
-        List<OrderLineDTO> invalidItems = new ArrayList<>();
-
+        //List<OrderLineDTO> invalidItems = new ArrayList<>();
         List<OrderLineEntity> lines = new ArrayList<>();
+
         for (ItemNumberPairDTO itemDTO : orderCreateDTO.getItems()) {
             Optional<ItemEntity> itemEntity = itemRepository.findById(itemDTO.getItemId());
             if (itemEntity.isEmpty()) {
                 return new CreateOrderResultDTO(new MessageResponseDTO(404, "Item not found"), "");
             }
-            int availability = itemService.checkAvailabilityAtDateRange(itemDTO.getItemId(), orderCreateDTO.getDeliveryDate(), orderCreateDTO.getReturnDate());
+            OrderLineEntity line = new OrderLineEntity();
+            line.setItem(itemEntity.get());
+            line.setQuantity(itemDTO.getQuantity());
+            lines.add(line);
+            pricePerDay = pricePerDay.add(itemEntity.get().getPricePerDay().multiply(BigDecimal.valueOf(itemDTO.getQuantity())));
+        }
+        /*
+        for (ItemNumberPairDTO itemDTO : orderCreateDTO.getItems()) {
+            Optional<ItemEntity> itemEntity = itemRepository.findById(itemDTO.getItemId());
+            if (itemEntity.isEmpty()) {
+                return new CreateOrderResultDTO(new MessageResponseDTO(404, "Item not found"), "");
+            }
+            int availability = itemService.checkAvailabilityAtDateRange(itemDTO.getItemId(), orderCreateDTO.getDeliveryDate(), orderCreateDTO.getReturnDate()); 
             if (availability < itemDTO.getQuantity()) {
                 OrderLineDTO orderLineDTO = new OrderLineDTO();
                 orderLineDTO.setItem(modelMapper.map(itemEntity.get(), ItemDTO.class));
@@ -77,10 +89,12 @@ public class OrderService {
             pricePerDay = pricePerDay.add(itemEntity.get().getPricePerDay().multiply(BigDecimal.valueOf(itemDTO.getQuantity())));
         }
 
+         
         if (!invalidItems.isEmpty()) {
             log.info("Items not available");
             return new CreateOrderResultDTO(new MessageResponseDTO(409, "Items not available"), invalidItems);
         }
+         */
 
         orderEntity.setLines(lines);
         orderEntity.setTotalPrice(pricePerDay.multiply(BigDecimal.valueOf(totalDays)));
@@ -101,6 +115,43 @@ public class OrderService {
     }
 
     @Transactional
+    public OrderCheckAvalResultDTO checkAvailability(OrderCheckAvalDTO orderCheckAvalDTO, String email) {
+        Optional<UserEntity> customer = userRepository.findByEmail(email);
+        if (customer.isEmpty()) {
+            return new OrderCheckAvalResultDTO(new MessageResponseDTO(404, "User not found"));
+        }
+        if (orderCheckAvalDTO.getItems() == null || orderCheckAvalDTO.getItems().isEmpty()) {
+            return new OrderCheckAvalResultDTO(new MessageResponseDTO(400, "No items provided"));
+        }
+
+        List<OrderLineDTO> invalidItems = new ArrayList<>();
+
+        for (ItemNumberPairDTO itemDTO : orderCheckAvalDTO.getItems()) {
+            Optional<ItemEntity> itemEntity = itemRepository.findById(itemDTO.getItemId());
+            if (itemEntity.isEmpty()) {
+                return new OrderCheckAvalResultDTO(new MessageResponseDTO(404, "Item not found"));
+            }
+            int availability = itemService.checkAvailabilityAtDateRange(itemDTO.getItemId(), orderCheckAvalDTO.getDeliveryDate(), orderCheckAvalDTO.getReturnDate());
+            if (availability < itemDTO.getQuantity()) {
+                OrderLineDTO orderLineDTO = new OrderLineDTO();
+                orderLineDTO.setItem(modelMapper.map(itemEntity.get(), ItemDTO.class));
+                orderLineDTO.setQuantity(availability);
+                invalidItems.add(orderLineDTO);
+
+                log.warn("Item {} is not available. Requested: {}, Available: {}",
+                        itemDTO.getItemId(), itemDTO.getQuantity(), availability);
+            }
+        }
+
+        if (!invalidItems.isEmpty()) {
+            log.info("Items not available");
+            return new OrderCheckAvalResultDTO(new MessageResponseDTO(409, "Items not available"), invalidItems);
+        }
+
+        return new OrderCheckAvalResultDTO(new MessageResponseDTO(200, "Items available"));
+    }
+
+    @Transactional
     public void seedOrders() {
         String email = "user@gmail.com";
         ItemEntity itemEntity = itemRepository.findAll().getFirst();
@@ -113,8 +164,8 @@ public class OrderService {
                             new AddressDTO("Bulgaria", "Sofia", "Sofia", "ul. Tintyava 15", "1000", "Leave items at the driveway"),
                             List.of(new ItemNumberPairDTO(itemEntity.getId(), 50)),
                             "https://www.seedSuccessUrl.com",
-                            "https://www.seedCancelurl")
-                    , email
+                            "https://www.seedCancelurl"),
+                    email
             );
             //should be available
             createOrder(
@@ -124,8 +175,8 @@ public class OrderService {
                             new AddressDTO("Bulgaria", "Sofia", "Sofia", "ul. Georgi Raychev 15", "1000", "Leave items at the driveway"),
                             List.of(new ItemNumberPairDTO(itemEntity.getId(), 10)),
                             "https://www.seedSuccessUrl.com",
-                            "https://www.seedCancelurl")
-                    , email
+                            "https://www.seedCancelurl"),
+                    email
             );
             //should fail
             createOrder(
@@ -135,8 +186,8 @@ public class OrderService {
                             new AddressDTO("Bulgaria", "Pleven", "Pleven", "ul. Ivan Kirkov 17", "5800", "Leave items at the driveway"),
                             List.of(new ItemNumberPairDTO(itemEntity.getId(), 50)),
                             "https://www.seedSuccessUrl.com",
-                            "https://www.seedCancelurl")
-                    , email
+                            "https://www.seedCancelurl"),
+                    email
             );
             //should work
             createOrder(
@@ -146,8 +197,8 @@ public class OrderService {
                             new AddressDTO("Bulgaria", "Varna", "Varna", "boul. Mariya Louiza 1", "9000", "Leave items at the driveway"),
                             List.of(new ItemNumberPairDTO(itemEntity.getId(), 40)),
                             "https://www.seedSuccessUrl.com",
-                            "https://www.seedCancelurl")
-                    , email
+                            "https://www.seedCancelurl"),
+                    email
             );
             //should fail
             createOrder(
@@ -157,8 +208,8 @@ public class OrderService {
                             new AddressDTO("Bulgaria", "Varna", "Varna", "boul. Primorski 3", "9000", "Leave items at the driveway"),
                             List.of(new ItemNumberPairDTO(itemEntity.getId(), 40)),
                             "https://www.seedSuccessUrl.com",
-                            "https://www.seedCancelurl")
-                    , email
+                            "https://www.seedCancelurl"),
+                    email
             );
             createOrder(
                     new OrderCreateDTO(
@@ -167,8 +218,8 @@ public class OrderService {
                             new AddressDTO("Bulgaria", "Kyustendil", "Dupnitsa", "ul. Ivan Stranski 15", "2600", "Leave items at the driveway"),
                             List.of(new ItemNumberPairDTO(itemEntity.getId(), 10)),
                             "https://www.seedSuccessUrl.com",
-                            "https://www.seedCancelurl")
-                    , email
+                            "https://www.seedCancelurl"),
+                    email
             );
             orderRepository.findAll().forEach(orderEntity -> {
                 orderEntity.setStatus(OrderStatus.PENDING);
