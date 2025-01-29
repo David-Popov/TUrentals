@@ -52,6 +52,8 @@ export const actions: Actions = {
 			return { form, errorLogin: true };
 		}
 
+		//onsole.log("loginInfo:", loginInfo)
+
 		if (loginInfo) {
 			setAuthenticationCookies(cookies, loginInfo.token);
 

@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	const deliveryForm = await superValidate(zod(deliverySchema));
 
-	return { deliveryForm };
+	return { deliveryForm, token: locals.user.token };
 };
 
 export const actions: Actions = {
@@ -67,7 +67,7 @@ export const actions: Actions = {
 			result = await res.json();
 
 			if (!result) {
-				return { form, errorCheckout: true };
+				return { form, errorCheckout: true, message: "" };
 			}
 		} catch (err) {
 			console.log(err);

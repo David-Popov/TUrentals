@@ -33,6 +33,12 @@ type ReturnedProduct = {
 	description: string;
 };
 
+type CheckAvailability = {
+	deliveryDate: string;
+	returnDate: string;
+	items: OrderLineCheckQuantityItem[];
+};
+
 type OrderDeliveryAddress = {
 	countryName: string;
 	stateName: string;
@@ -46,6 +52,30 @@ type OrderLineItem = {
 	item: ReturnedProduct;
 	quantity: number;
 };
+
+type OrderLineCheckQuantityItem = {
+	itemId: number;
+	quantity: number;
+};
+
+type CheckAvailabilityResponse = {
+	itemsThatCannotBeOrdered: itemThatCannotBeOrdered[];
+	result: { status: number, message: string }
+};
+
+type itemThatCannotBeOrdered = {
+	item: Item;
+	quantity: number;
+}
+
+type Item = {
+	id: number;
+	name: string;
+	pricePerDay: number;
+	imageUrl: string;
+	categoryName: string;
+	description: string;
+}
 
 type OrderType = 'DELIVERY' | 'PICKUP';
 

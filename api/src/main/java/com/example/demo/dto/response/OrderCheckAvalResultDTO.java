@@ -14,14 +14,16 @@ public class OrderCheckAvalResultDTO {
 
     List<OrderLineDTO> itemsThatCannotBeOrdered;
     MessageResponseDTO result;
+    Boolean available;
 
     public OrderCheckAvalResultDTO(MessageResponseDTO result) {
         this.result = result;
         itemsThatCannotBeOrdered = new ArrayList<>();
     }
 
-    public OrderCheckAvalResultDTO(MessageResponseDTO itemsNotAvailable, List<OrderLineDTO> invalidItems) {
+    public OrderCheckAvalResultDTO(MessageResponseDTO itemsNotAvailable, List<OrderLineDTO> invalidItems, Boolean available) {
         this.result = itemsNotAvailable;
         this.itemsThatCannotBeOrdered = invalidItems;
+        this.available = available;
     }
 }

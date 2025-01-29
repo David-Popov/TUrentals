@@ -118,10 +118,10 @@ public class OrderService {
     public OrderCheckAvalResultDTO checkAvailability(OrderCheckAvalDTO orderCheckAvalDTO, String email) {
         Optional<UserEntity> customer = userRepository.findByEmail(email);
         if (customer.isEmpty()) {
-            return new OrderCheckAvalResultDTO(new MessageResponseDTO(404, "User not found"));
+            return new OrderCheckAvalResultDTO(new MessageResponseDTO(404, "User not found"),new ArrayList<>() ,true);
         }
         if (orderCheckAvalDTO.getItems() == null || orderCheckAvalDTO.getItems().isEmpty()) {
-            return new OrderCheckAvalResultDTO(new MessageResponseDTO(400, "No items provided"));
+            return new OrderCheckAvalResultDTO(new MessageResponseDTO(400, "No items provided"),new ArrayList<>() ,true);
         }
 
         List<OrderLineDTO> invalidItems = new ArrayList<>();
@@ -129,7 +129,7 @@ public class OrderService {
         for (ItemNumberPairDTO itemDTO : orderCheckAvalDTO.getItems()) {
             Optional<ItemEntity> itemEntity = itemRepository.findById(itemDTO.getItemId());
             if (itemEntity.isEmpty()) {
-                return new OrderCheckAvalResultDTO(new MessageResponseDTO(404, "Item not found"));
+                return new OrderCheckAvalResultDTO(new MessageResponseDTO(404, "Item not found"),new ArrayList<>() ,true);
             }
             int availability = itemService.checkAvailabilityAtDateRange(itemDTO.getItemId(), orderCheckAvalDTO.getDeliveryDate(), orderCheckAvalDTO.getReturnDate());
             if (availability < itemDTO.getQuantity()) {
@@ -145,10 +145,10 @@ public class OrderService {
 
         if (!invalidItems.isEmpty()) {
             log.info("Items not available");
-            return new OrderCheckAvalResultDTO(new MessageResponseDTO(409, "Items not available"), invalidItems);
+            return new OrderCheckAvalResultDTO(new MessageResponseDTO(200, "Items not available"), invalidItems, false);
         }
 
-        return new OrderCheckAvalResultDTO(new MessageResponseDTO(200, "Items available"));
+        return new OrderCheckAvalResultDTO(new MessageResponseDTO(200, "Items available"), new ArrayList<>() ,true);
     }
 
     @Transactional

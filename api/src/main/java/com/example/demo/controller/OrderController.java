@@ -33,7 +33,7 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @GetMapping("checkAvailability")
+    @PostMapping("checkAvailability")
     @Operation(summary = "Check the availability of the items in the order")
     public ResponseEntity<?> checkAvailability(@Valid @RequestBody OrderCheckAvalDTO orderCheckAvalDTO, BindingResult bindingResult, Principal principal) {
         if (bindingResult.hasErrors()) {
