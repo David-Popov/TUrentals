@@ -23,7 +23,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 			method: 'GET'
 		});
 
-		// console.log(res);
+		 console.log(res.status);
 
 		if (!res.ok) {
 			event.locals.user = null;

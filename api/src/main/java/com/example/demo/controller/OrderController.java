@@ -1,29 +1,47 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.common.MessageResponseDTO;
-import com.example.demo.dto.enums.OrderType;
-import com.example.demo.dto.request.AssignToEmployeeDTO;
-import com.example.demo.dto.request.OrderCompleteDTO;
-import com.example.demo.dto.request.OrderCreateDTO;
-import com.example.demo.dto.response.CreateOrderResultDTO;
-import com.example.demo.dto.response.OrderDTO;
-import com.example.demo.service.OrderService;
-import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.security.Principal;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
-import java.util.List;
+import com.example.demo.dto.common.MessageResponseDTO;
+import com.example.demo.dto.request.AssignToEmployeeDTO;
+import com.example.demo.dto.request.OrderCheckAvalDTO;
+import com.example.demo.dto.request.OrderCompleteDTO;
+import com.example.demo.dto.request.OrderCreateDTO;
+import com.example.demo.dto.response.CreateOrderResultDTO;
+import com.example.demo.dto.response.OrderCheckAvalResultDTO;
+import com.example.demo.dto.response.OrderDTO;
+import com.example.demo.service.OrderService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("order/")
 public class OrderController {
+
     private final OrderService orderService;
+
+    @PostMapping("checkAvailability")
+    @Operation(summary = "Check the availability of the items in the order")
+    public ResponseEntity<?> checkAvailability(@Valid @RequestBody OrderCheckAvalDTO orderCheckAvalDTO, BindingResult bindingResult, Principal principal) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.status(400).body(new MessageResponseDTO(400, bindingResult.getAllErrors().get(0).getDefaultMessage()));
+        }
+        OrderCheckAvalResultDTO result = orderService.checkAvailability(orderCheckAvalDTO, principal.getName());
+        return ResponseEntity.status(result.getResult().status()).body(result);
+    }
 
     @PostMapping("create")
     @Operation(summary = "Create a new order, if the items are not available it returns the item Ids and the available quantity")
